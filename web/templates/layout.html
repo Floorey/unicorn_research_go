@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unicorn Research - Quant Lab (Public)</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator { display: block; }
+        .htmx-request.htmx-indicator { display: block; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans">
+    <nav class="bg-indigo-700 text-white shadow-lg p-4 mb-8">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold tracking-tight">
+                <a href="/">🦄 Unicorn Research <span class="text-indigo-200 font-light">Quant Lab</span></a>
+            </h1>
+            <div class="flex items-center space-x-6">
+                <a href="/" class="hover:text-indigo-200 transition text-sm font-medium">Simulator</a>
+                <a href="/api/v1/risk-report" class="hover:text-indigo-200 transition text-sm font-medium">API Report</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4 pb-12">
+        {{ if eq .Content "index" }}
+            {{ template "content" . }}
+        {{ end }}
+    </main>
+
+    <footer class="mt-auto py-8 bg-slate-100 border-t border-slate-200 text-center text-slate-500 text-sm">
+        <p>&copy; 2026 Unicorn Research Go - Public Edition</p>
+    </footer>
+</body>
+</html>

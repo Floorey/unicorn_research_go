@@ -4,6 +4,7 @@ FROM golang:1.26-alpine AS builder
 # Install build dependencies for CGO and SQLite
 RUN apk add --no-cache gcc musl-dev
 
+
 WORKDIR /app
 
 # Copy go mod and sum files

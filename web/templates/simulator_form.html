@@ -1,0 +1,79 @@
+<form hx-post="/ui/simulate" 
+      hx-target="#results-container" 
+      hx-indicator="#loading"
+      id="simulator-form"
+      class="space-y-4">
+    
+    <div class="grid grid-cols-2 gap-4">
+        <div>
+            <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Int. Rate (%)</label>
+            <input type="number" name="interest_rate" value="{{ if .Dash }}{{ .Dash.InterestRate }}{{ else }}4.25{{ end }}" step="0.01" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none transition text-sm">
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Oil Price ($)</label>
+            <input type="number" name="oil_price" value="{{ if .Dash }}{{ .Dash.OilPrice }}{{ else }}82.50{{ end }}" step="0.01" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none transition text-sm">
+        </div>
+    </div>
+
+    <div class="space-y-3 pt-2">
+        <h3 class="text-sm font-semibold text-slate-700">Portfolio Positions (EUR)</h3>
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase">Tech</label>
+                <input type="number" name="pos_a_tech" value="{{ if .Dash }}{{ .Dash.PosATech }}{{ else }}3000{{ end }}" class="w-full p-2 border border-slate-200 rounded text-sm">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase">Energy</label>
+                <input type="number" name="pos_b_energy" value="{{ if .Dash }}{{ .Dash.PosBEnergy }}{{ else }}2000{{ end }}" class="w-full p-2 border border-slate-200 rounded text-sm">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase">Bonds</label>
+                <input type="number" name="pos_c_bonds" value="{{ if .Dash }}{{ .Dash.PosCBonds }}{{ else }}5000{{ end }}" class="w-full p-2 border border-slate-200 rounded text-sm">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase">Crypto</label>
+                <input type="number" name="pos_d_crypto" value="{{ if .Dash }}{{ .Dash.PosDCrypto }}{{ else }}1000{{ end }}" class="w-full p-2 border border-slate-200 rounded text-sm">
+            </div>
+            <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase">Gold</label>
+                <input type="number" name="pos_e_gold" value="{{ if .Dash }}{{ .Dash.PosEGold }}{{ else }}1500{{ end }}" class="w-full p-2 border border-slate-200 rounded text-sm">
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+        <div>
+            <label class="block text-xs font-medium text-slate-500 uppercase mb-1">Duration (Yrs)</label>
+            <input type="number" name="duration_years" value="{{ if .Dash }}{{ .Dash.DurationYears }}{{ else }}5{{ end }}" class="w-full p-2 border border-slate-300 rounded text-sm">
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-slate-500 uppercase mb-1">Paths</label>
+            <input type="number" name="num_paths" value="{{ if .Dash }}{{ .Dash.NumPaths }}{{ else }}1000{{ end }}" class="w-full p-2 border border-slate-300 rounded text-sm">
+        </div>
+    </div>
+
+    <div class="flex gap-2">
+        <button type="submit" class="flex-grow bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow-md hover:shadow-lg transition-all transform active:scale-95 flex justify-center items-center">
+            Run Monte Carlo
+            <span id="loading" class="htmx-indicator ml-3">
+                <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </span>
+        </button>
+    </div>
+
+    <div class="pt-6 border-t border-slate-100">
+        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Scenario Name</label>
+        <div class="flex gap-2">
+            <input type="text" name="dashboard_name" placeholder="E.g. Global Crisis" class="flex-grow p-2 border border-slate-200 rounded text-sm outline-none focus:border-indigo-300 transition">
+            <button hx-post="/ui/dashboards" 
+                    hx-include="#simulator-form"
+                    hx-target="#dashboard-list-container"
+                    class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2 rounded text-xs transition">
+                Save
+            </button>
+        </div>
+    </div>
+</form>

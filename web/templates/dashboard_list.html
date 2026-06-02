@@ -1,0 +1,16 @@
+<h2 class="text-xl font-semibold mb-6 text-slate-800 border-b pb-2">Scenarios</h2>
+<div class="space-y-2">
+    {{ if not .Dashboards }}
+    <p class="text-sm text-slate-400 italic">No scenarios saved yet.</p>
+    {{ end }}
+    {{ range .Dashboards }}
+    <button hx-get="/ui/dashboards/{{ .ID }}" 
+            hx-target="#simulator-form-container"
+            class="w-full text-left p-3 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition group">
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-medium text-slate-700 group-hover:text-indigo-700">{{ .Name }}</span>
+            <span class="text-[10px] text-slate-400 uppercase tracking-tighter">{{ .CreatedAt.Format "Jan 02" }}</span>
+        </div>
+    </button>
+    {{ end }}
+</div>
