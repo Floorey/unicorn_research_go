@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GoProfileHistory">
+    <profile entry="$USER_HOME$/GoLandProfiles/go_build_github_com_lukasenderle_unicorn_research_go_cmd_server-heap_with_gc-2026-06-02-113717-335.pprof">
+      <GoProfileMapEntry>
+        <option name="buildAnchorMillis" value="1780393028007" />
+        <option name="file" value="go_build_github_com_lukasenderle_unicorn_research_go_cmd_server-heap_with_gc-2026-06-02-113717-335.pprof" />
+        <option name="ours" value="true" />
+      </GoProfileMapEntry>
+    </profile>
+    <profile entry="$USER_HOME$/GoLandProfiles/go_build_github_com_lukasenderle_unicorn_research_go_cmd_server-cpu-2026-06-02-113732-697.pprof">
+      <GoProfileMapEntry>
+        <option name="buildAnchorMillis" value="1780393028007" />
+        <option name="file" value="go_build_github_com_lukasenderle_unicorn_research_go_cmd_server-cpu-2026-06-02-113732-697.pprof" />
+        <option name="ours" value="true" />
+      </GoProfileMapEntry>
+    </profile>
+  </component>
+</project>
