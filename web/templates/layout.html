@@ -20,15 +20,18 @@
                 <a href="/">🦄 Unicorn Research <span class="text-indigo-200 font-light">Quant Lab</span></a>
             </h1>
             <div class="flex items-center space-x-6">
-                <a href="/" class="hover:text-indigo-200 transition text-sm font-medium">Simulator</a>
+                <a href="/" class="hover:text-indigo-200 transition text-sm font-medium">Macro Simulator</a>
+                <a href="/sector-hedge" class="hover:text-indigo-200 transition text-sm font-medium">Sector Hedge Tool</a>
                 <a href="/api/v1/risk-report" class="hover:text-indigo-200 transition text-sm font-medium">API Report</a>
             </div>
-        </div>
-    </nav>
-
-    <main class="container mx-auto px-4 pb-12">
-        {{ if eq .Content "index" }}
+            ...
+            <main class="container mx-auto px-4 pb-12">
+            {{ if eq .Content "index" }}
             {{ template "content" . }}
+            {{ else if eq .Content "sector_hedge" }}
+            {{ template "content" . }}
+            {{ end }}
+            </main>
         {{ end }}
     </main>
 

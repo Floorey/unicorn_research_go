@@ -18,6 +18,7 @@ func RegisterRoutes(r *gin.Engine) {
 	v1 := r.Group("/api/v1")
 	{
 		v1.POST("/simulate", runSimulation)
+		v1.POST("/simulate/sector-hedge", runSectorHedgeAPI)
 		v1.GET("/history", getHistory)
 		v1.GET("/history/export", exportHistoryCSV)
 
@@ -39,6 +40,17 @@ func RegisterRoutes(r *gin.Engine) {
 		v1.POST("/dashboards", saveDashboard)
 		v1.GET("/dashboards/:id", getDashboard)
 	}
+}
+
+func runSectorHedgeAPI(c *gin.Context) {
+	var req models.SectorHedgeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	resp := simulation.RunSectorHedge(req)
+	c.JSON(http.StatusOK, resp)
 }
 
 func listDashboards(c *gin.Context) {

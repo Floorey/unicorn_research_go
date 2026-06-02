@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -15,7 +14,9 @@ import (
 
 func RegisterUIHandlers(r *gin.Engine) {
 	r.GET("/", renderIndex)
+	r.GET("/sector-hedge", renderSectorHedge)
 	r.POST("/ui/simulate", handleUISimulate)
+	r.POST("/ui/simulate/sector-hedge", handleSectorHedgeSimulate)
 	r.POST("/ui/dashboards", handleSaveDashboard)
 	r.GET("/ui/dashboards/:id", handleLoadDashboard)
 }
@@ -27,6 +28,61 @@ func renderIndex(c *gin.Context) {
 		"Dashboards": dashboards,
 		"Content":    "index",
 	})
+}
+
+func renderSectorHedge(c *gin.Context) {
+	c.HTML(http.StatusOK, "layout.html", gin.H{
+		"Content": "sector_hedge",
+	})
+}
+
+func handleSectorHedgeSimulate(c *gin.Context) {
+	indexVol, _ := strconv.ParseFloat(c.PostForm("index_vol"), 64)
+	optionStrike, _ := strconv.ParseFloat(c.PostForm("option_strike"), 64)
+	optionExpiry, _ := strconv.ParseFloat(c.PostForm("option_expiry"), 64)
+	optionQty, _ := strconv.ParseFloat(c.PostForm("option_quantity"), 64)
+	shortIndexPos, _ := strconv.ParseFloat(c.PostForm("short_index_pos"), 64)
+	duration, _ := strconv.ParseFloat(c.PostForm("duration_years"), 64)
+	rFR, _ := strconv.ParseFloat(c.PostForm("risk_free_rate"), 64)
+	numPaths, _ := strconv.Atoi(c.PostForm("num_paths"))
+
+	stockPositions := []float64{
+		parseFormFloat(c, "pos_1"),
+		parseFormFloat(c, "pos_2"),
+		parseFormFloat(c, "pos_3"),
+	}
+	stockBetas := []float64{
+		parseFormFloat(c, "beta_1"),
+		parseFormFloat(c, "beta_2"),
+		parseFormFloat(c, "beta_3"),
+	}
+	stockVols := []float64{
+		parseFormFloat(c, "vol_1"),
+		parseFormFloat(c, "vol_2"),
+		parseFormFloat(c, "vol_3"),
+	}
+
+	req := models.SectorHedgeRequest{
+		IndexVol:       indexVol / 100.0,
+		StockPositions: stockPositions,
+		StockBetas:     stockBetas,
+		StockVols:      stockVols,
+		OptionStrike:   optionStrike,
+		OptionExpiry:   optionExpiry,
+		OptionQuantity: optionQty,
+		ShortIndexPos:  shortIndexPos,
+		DurationYears:  duration,
+		RiskFreeRate:   rFR,
+		NumPaths:       numPaths,
+	}
+
+	resp := simulation.RunSectorHedge(req)
+	c.HTML(http.StatusOK, "sector_hedge_results.html", resp)
+}
+
+func parseFormFloat(c *gin.Context, key string) float64 {
+	val, _ := strconv.ParseFloat(c.PostForm(key), 64)
+	return val
 }
 
 func handleSaveDashboard(c *gin.Context) {
@@ -66,13 +122,11 @@ func handleSaveDashboard(c *gin.Context) {
 
 func handleLoadDashboard(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-
 	dash, err := db.GetDashboardByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "dashboard not found"})
 		return
 	}
-
 	c.HTML(http.StatusOK, "simulator_form.html", gin.H{
 		"Dash": dash,
 	})
@@ -108,12 +162,8 @@ func handleUISimulate(c *gin.Context) {
 	if req.VolEGold == 0 { req.VolEGold, _ = market.GetVolatility("GLD") }
 
 	resp := simulation.Run(req)
-
 	go func() {
-		err := db.SaveSimulation(req, resp)
-		if err != nil {
-			log.Printf("[DB] Error saving simulation: %v", err)
-		}
+		db.SaveSimulation(req, resp)
 	}()
 
 	c.HTML(http.StatusOK, "results.html", gin.H{

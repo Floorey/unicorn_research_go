@@ -26,6 +26,36 @@ type SimulationResponse struct {
 	ChartData    [][]float64  `json:"chart_data"`
 }
 
+type SectorHedgeRequest struct {
+	IndexSymbol    string   `json:"index_symbol"`
+	IndexVol       float64  `json:"index_vol"`
+	StockSymbols   []string `json:"stock_symbols"`
+	StockPositions []float64 `json:"stock_positions"`
+	StockBetas     []float64 `json:"stock_betas"`
+	StockVols      []float64 `json:"stock_vols"` // Idiosyncratic vols
+	OptionStrike   float64  `json:"option_strike"`
+	OptionExpiry   float64  `json:"option_expiry_years"`
+	OptionQuantity float64  `json:"option_quantity"`
+	ShortIndexPos  float64  `json:"short_index_pos"`
+	DurationYears  float64  `json:"duration_years"`
+	RiskFreeRate   float64  `json:"risk_free_rate"`
+	NumPaths       int      `json:"num_paths"`
+}
+
+type SectorHedgeResponse struct {
+	Status    string      `json:"status"`
+	Metrics   HedgeMetrics `json:"metrics"`
+	ChartData [][]float64 `json:"chart_data"`
+}
+
+type HedgeMetrics struct {
+	FinalValueMean     float64 `json:"final_value_mean"`
+	WinRate            float64 `json:"win_rate"` // Percentage of paths with profit
+	MaxDrawdown        float64 `json:"max_drawdown"`
+	AlphaContribution  float64 `json:"alpha_contribution"`
+	HedgeEffectiveness float64 `json:"hedge_effectiveness"`
+}
+
 type InputSummary struct {
 	TotalInvestment  float64          `json:"total_investment"`
 	CalculatedDrifts CalculatedDrifts `json:"calculated_drifts"`

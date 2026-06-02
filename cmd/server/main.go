@@ -6,6 +6,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/lukasenderle/unicorn_research_go/internal/api"
 	"github.com/lukasenderle/unicorn_research_go/internal/db"
+	"html/template"
 )
 
 func main() {
@@ -13,6 +14,17 @@ func main() {
 	db.InitDB("./simulations.db")
 
 	r := gin.Default()
+
+	// Add Template Functions
+	r.SetFuncMap(template.FuncMap{
+		"seq": func(start, end int) []int {
+			var res []int
+			for i := start; i <= end; i++ {
+				res = append(res, i)
+			}
+			return res
+		},
+	})
 
 	// Load Templates
 	r.LoadHTMLGlob("web/templates/*")

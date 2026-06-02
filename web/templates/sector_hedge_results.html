@@ -1,0 +1,88 @@
+<div class="bg-white p-8 rounded-xl shadow-sm border border-slate-200 animate-in fade-in zoom-in duration-500">
+    <div class="flex justify-between items-center mb-8">
+        <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Strategy Performance Metrics</h2>
+        <span class="px-4 py-1.5 bg-indigo-100 text-indigo-700 text-xs font-black rounded-full uppercase tracking-widest">Simulated</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div class="p-6 bg-slate-50 rounded-xl border border-slate-100">
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Final Portfolio (Mean)</label>
+            <div class="text-3xl font-black text-slate-900">€{{ .Metrics.FinalValueMean }}</div>
+        </div>
+        <div class="p-6 bg-slate-50 rounded-xl border border-slate-100">
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Success Rate (Profit)</label>
+            <div class="text-3xl font-black {{ if gt .Metrics.WinRate 50.0 }}text-emerald-600{{ else }}text-rose-600{{ end }}">{{ .Metrics.WinRate }}%</div>
+        </div>
+        <div class="p-6 bg-slate-50 rounded-xl border border-slate-100">
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Peak Leverage</label>
+            <div class="text-3xl font-black text-indigo-600">Dynamic</div>
+        </div>
+        <div class="p-6 bg-slate-50 rounded-xl border border-slate-100">
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Simulated Paths</label>
+            <div class="text-3xl font-black text-slate-400">5,000</div>
+        </div>
+    </div>
+
+    <div class="relative h-[450px] w-full mb-8 bg-white p-4 rounded-xl border border-slate-50">
+        <canvas id="hedgeChart"></canvas>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 border-t border-slate-100">
+        <div class="space-y-2">
+            <h3 class="text-sm font-bold text-slate-800 uppercase italic">Methodology</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                Prices are generated using a **Single-Factor Beta Model**. Individual stock returns are correlated to the Index based on provided Beta coefficients, with added Gaussian idiosyncratic noise ($\sigma_{idio}$).
+            </p>
+        </div>
+        <div class="space-y-2">
+            <h3 class="text-sm font-bold text-slate-800 uppercase italic">Option Pricing</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                Call options are re-priced at every monthly step using the **Black-Scholes-Merton** model. Time decay (Theta) and Gamma effects are fully captured in the path dynamics.
+            </p>
+        </div>
+        <div class="space-y-2">
+            <h3 class="text-sm font-bold text-slate-800 uppercase italic">Hedge Mechanics</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                The Index Short position acts as a linear hedge. Strategy performance depends on **Alpha generation** (stocks outperforming their Beta-adjusted expectations) and option convexity.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const ctx = document.getElementById('hedgeChart').getContext('2d');
+            const chartData = {{ .ChartData }};
+            
+            const labels = Array.from({length: chartData[0].length}, (_, i) => i === 0 ? 'T0' : 'M' + i);
+            const datasets = chartData.map((path, index) => ({
+                label: 'Scenario ' + (index + 1),
+                data: path,
+                borderColor: index === 0 ? 'rgba(79, 70, 229, 0.9)' : 'rgba(148, 163, 184, 0.15)',
+                borderWidth: index === 0 ? 3 : 1,
+                fill: false,
+                tension: 0.2,
+                pointRadius: 0
+            }));
+
+            new Chart(ctx, {
+                type: 'line',
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Net Strategy Equity Paths (EUR)', font: { weight: 'bold' } }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { 
+                            grid: { color: 'rgba(0,0,0,0.03)' },
+                            title: { display: true, text: 'Net Value (€)' }
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
+</div>
