@@ -17,12 +17,13 @@ The heart of the application is a multi-threaded Monte Carlo simulation engine i
 *   **Cholesky Decomposition:** To handle multi-asset portfolios, the system incorporates a Cholesky decomposition algorithm to simulate correlated returns across five distinct asset classes (Tech, Energy, Bonds, Crypto, and Gold).
 *   **Historical Volatility:** Instead of hardcoded values, the system integrates with the MarketData API to calculate real-world annualized volatility based on 252-day log-return standard deviations.
 
-### 3. Advanced Risk Metrics
-The platform provides a comprehensive suite of "Quant-First" metrics, moving beyond simple mean returns:
+### 3. Advanced Risk Metrics & Strategy Lab
+The platform provides a comprehensive suite of "Quant-First" metrics and a specialized **Strategy Lab**:
 *   **Value at Risk (VaR 99%):** Quantifies the maximum expected loss over a specific timeframe with 99% confidence.
-*   **Expected Shortfall (CVaR):** Calculates the average loss in the most extreme 1% of scenarios.
+*   **Sector Hedge Simulator:** A specialized tool for analyzing **Alpha Capture** strategies. It uses a **Single-Factor Beta Model** to simulate specific stock picks (e.g., MU, NVDA) against a benchmark index (e.g., QQQ).
+*   **Real-Time Data Calibrations:** The system automatically calculates trailing **Betas** and **Idiosyncratic Volatilities** from live market data to ensure simulations are grounded in current market reality.
+*   **Dynamic Option Pricing:** Integrates a **Black-Scholes-Merton** engine to model call option hedges and their time-decay (Theta) dynamics within simulated paths.
 *   **Risk-Adjusted Returns:** Implements both **Sharpe Ratio** (total risk) and **Sortino Ratio** (downside risk) to evaluate investment quality.
-*   **Maximum Drawdown:** Tracks the average peak-to-trough decline across all paths to evaluate potential "investor pain."
 
 ### 4. Technical Architecture
 The project follows a Clean Architecture pattern, ensuring maintainability and scalability:

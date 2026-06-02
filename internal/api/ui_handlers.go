@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -35,35 +36,71 @@ func renderSectorHedge(c *gin.Context) {
 		"Content": "sector_hedge",
 	})
 }
-
 func handleSectorHedgeSimulate(c *gin.Context) {
-	indexVol, _ := strconv.ParseFloat(c.PostForm("index_vol"), 64)
-	optionStrike, _ := strconv.ParseFloat(c.PostForm("option_strike"), 64)
-	optionExpiry, _ := strconv.ParseFloat(c.PostForm("option_expiry"), 64)
-	optionQty, _ := strconv.ParseFloat(c.PostForm("option_quantity"), 64)
-	shortIndexPos, _ := strconv.ParseFloat(c.PostForm("short_index_pos"), 64)
+	indexSymbol := strings.ToUpper(c.PostForm("index_symbol"))
+	if indexSymbol == "" { indexSymbol = "QQQ" }
+
 	duration, _ := strconv.ParseFloat(c.PostForm("duration_years"), 64)
 	rFR, _ := strconv.ParseFloat(c.PostForm("risk_free_rate"), 64)
 	numPaths, _ := strconv.Atoi(c.PostForm("num_paths"))
 
-	stockPositions := []float64{
-		parseFormFloat(c, "pos_1"),
-		parseFormFloat(c, "pos_2"),
-		parseFormFloat(c, "pos_3"),
+	// Fetch Index Data
+	indexPrice, _ := market.GetPrice(indexSymbol)
+	indexVol, _ := market.GetVolatility(indexSymbol)
+
+	stockSymbols := []string{
+		strings.ToUpper(c.PostForm("symbol_1")),
+		strings.ToUpper(c.PostForm("symbol_2")),
+		strings.ToUpper(c.PostForm("symbol_3")),
 	}
-	stockBetas := []float64{
-		parseFormFloat(c, "beta_1"),
-		parseFormFloat(c, "beta_2"),
-		parseFormFloat(c, "beta_3"),
+
+	stockPositions := make([]float64, 0)
+	stockBetas := make([]float64, 0)
+	stockVols := make([]float64, 0)
+
+	totalWeightedBeta := 0.0
+	totalLongValue := 0.0
+
+	for _, sym := range stockSymbols {
+		if sym == "" { continue }
+
+		qty, _ := strconv.ParseFloat(c.PostForm("qty_"+sym), 64)
+		if qty == 0 { qty = 100 } // Default
+
+		price, _ := market.GetPrice(sym)
+		val := qty * price
+
+		beta, _ := market.GetBeta(sym, indexSymbol)
+		idioVol, _ := market.GetIdiosyncraticVolatility(sym, indexSymbol, beta)
+
+		stockPositions = append(stockPositions, val)
+		stockBetas = append(stockBetas, beta)
+		stockVols = append(stockVols, idioVol)
+
+		totalWeightedBeta += (val * beta)
+		totalLongValue += val
 	}
-	stockVols := []float64{
-		parseFormFloat(c, "vol_1"),
-		parseFormFloat(c, "vol_2"),
-		parseFormFloat(c, "vol_3"),
+
+	// Option Params
+	optionStrike, _ := strconv.ParseFloat(c.PostForm("option_strike"), 64)
+	if optionStrike == 0 { optionStrike = indexPrice } // ATM
+
+	optionExpiry, _ := strconv.ParseFloat(c.PostForm("option_expiry"), 64)
+	optionQty, _ := strconv.ParseFloat(c.PostForm("option_quantity"), 64)
+
+	// Automatic Hedge: Short the index to neutralize the total beta
+	shortIndexPos, _ := strconv.ParseFloat(c.PostForm("short_index_pos"), 64)
+	hedgeRatio, _ := strconv.ParseFloat(c.PostForm("hedge_ratio"), 64)
+	if hedgeRatio == 0 { hedgeRatio = 100 }
+	
+	if shortIndexPos == 0 {
+		shortIndexPos = totalWeightedBeta * (hedgeRatio / 100.0) // Apply multiplier
 	}
 
 	req := models.SectorHedgeRequest{
-		IndexVol:       indexVol / 100.0,
+		IndexSymbol:    indexSymbol,
+		IndexVol:       indexVol,
+		StockSymbols:   stockSymbols,
 		StockPositions: stockPositions,
 		StockBetas:     stockBetas,
 		StockVols:      stockVols,

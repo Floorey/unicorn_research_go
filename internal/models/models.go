@@ -44,6 +44,7 @@ type SectorHedgeRequest struct {
 
 type SectorHedgeResponse struct {
 	Status    string      `json:"status"`
+	NumPaths  int         `json:"num_paths"`
 	Metrics   HedgeMetrics `json:"metrics"`
 	ChartData [][]float64 `json:"chart_data"`
 }

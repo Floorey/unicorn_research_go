@@ -1,13 +1,13 @@
 # Technical White Paper: Unicorn Research Go
 ## Advanced Stochastic Modeling and Systematic Risk Analysis in a Concurrent Runtime
 **Author:** Lukas Enderle  
-**Version:** 2.0 (Scientific/Analytical Focus)  
+**Version:** 2.1 (Expanded Multi-Strategy Focus)  
 **Field:** Computational Finance / Backend Engineering  
 
 ---
 
 ### 1. Abstract
-Unicorn Research Go is a high-throughput computational platform designed for the systematic stress testing of multi-asset portfolios. By leveraging a multi-threaded Monte Carlo simulation engine, the platform models macro-economic scenarios through correlated stochastic processes. This paper details the mathematical methodology, the statistical derivation of risk metrics, and the architectural implementation within the Go runtime environment.
+Unicorn Research Go is a high-throughput computational platform designed for the systematic stress testing of multi-asset portfolios. By leveraging a multi-threaded Monte Carlo simulation engine, the platform models macro-economic scenarios through correlated stochastic processes. This paper details the mathematical methodology, the statistical derivation of risk metrics, and the architectural implementation of both macro-level and sector-neutral hedge strategies within the Go runtime.
 
 ### 2. Methodology: Stochastic Modeling & Mathematical Foundation
 The simulation engine models price dynamics using **Geometric Brownian Motion (GBM)**, a continuous-time stochastic process.
@@ -24,33 +24,48 @@ Where:
 To accurately model a portfolio, assets cannot be treated as independent variables. The system employs **Cholesky Decomposition** to transform independent Gaussian noise into correlated returns.
 1.  **Correlation Matrix ($\Sigma$):** A $5 \times 5$ positive semi-definite matrix representing the historical relationships between Tech, Energy, Bonds, Crypto, and Gold.
 2.  **Lower Triangular Matrix ($L$):** The system solves for $L$ such that $L L^T = \Sigma$.
-3.  **Transformation:** Given a vector of independent random variables $Z$, the correlated vector $\epsilon$ is derived via $\epsilon = L Z$. This ensures the simulation respects the systemic dependencies inherent in global markets.
+3.  **Transformation:** Given a vector of independent random variables $Z$, the correlated vector $\epsilon$ is derived via $\epsilon = L Z$.
 
-### 3. Quantitative Risk Analysis & Statistical Derivations
-The platform derives a high-dimensional results set from 10,000+ simulated paths, focusing on the left-tail risk (worst-case outcomes).
+### 3. Sector Hedge Strategy: Factor Modeling & Option Convexity
+Version 2.1 introduces a specialized module for analyzing **Sector-Neutral Long/Short strategies** augmented with derivative leverage.
 
-#### 3.1 Value at Risk (VaR) & Expected Shortfall (CVaR)
-*   **VaR (99%):** Defined as the $\alpha$-quantile of the return distribution where $\alpha = 0.01$. It identifies the threshold loss that is not exceeded with a 99% probability.
-*   **Expected Shortfall (ES):** Unlike VaR, ES is coherent and accounts for tail-fatness. It is calculated as the mean of the losses exceeding the VaR threshold:
-    $$ES_\alpha = E[X | X \le VaR_\alpha]$$
+#### 3.1 Real-Time Statistical Derivation
+The platform transcends static modeling by integrating live market data for asset-specific calibration:
+*   **Dynamic Beta Calculation**: The system automatically fetches historical daily candles for stocks (e.g., MU, NVDA) and benchmarks (e.g., QQQ, SPY). It computes the **Covariance($R_s, R_i$) / Variance($R_i$)** ratio over a 252-day trailing window to derive real-time Beta coefficients.
+*   **Idiosyncratic Risk Extraction**: By applying the Factor Model identity ($\sigma_s^2 = \beta^2 \sigma_i^2 + \sigma_{idio}^2$), the engine isolates the residual volatility ($\sigma_{idio}$) unique to the specific company, allowing for precise "Alpha" simulation.
 
-#### 3.2 Performance Attribution Metrics
-*   **Sharpe Ratio:** Evaluates the mean excess return per unit of total standard deviation.
-*   **Sortino Ratio:** A refinement of Sharpe, utilizing **Downside Deviation** (calculating variance only for returns below the risk-free rate), providing a more accurate measure for asymmetric return distributions.
-*   **Maximum Drawdown (MDD):** A path-dependent metric tracking the average maximum peak-to-trough decline, quantifying the potential for capital impairment during volatile cycles.
+#### 3.2 Single-Factor Beta Model
+Individual stock returns $R_i$ are modeled as a linear function of a Sector Index return $R_I$:
+$$R_i = \beta_i R_I + \epsilon_i$$
+Where $\beta_i$ is the sensitivity to the index and $\epsilon_i \sim N(0, \sigma_{idio}^2)$ represents the idiosyncratic risk specific to the company (Alpha source).
 
-### 4. Software Engineering & High-Performance Concurrency
-The implementation utilizes Go’s **CSP-style concurrency** to minimize latency during intensive floating-point calculations.
+#### 3.3 Dynamic Derivative Pricing (Black-Scholes-Merton)
+The strategy incorporates European Call Options, which are re-priced at every monthly step ($dt$) of the simulation to capture path-dependent effects:
+$$C(S, t) = N(d_1)S_t - N(d_2)Ke^{-r(T-t)}$$
+By embedding this formula within the Monte Carlo paths, the system accounts for:
+*   **Theta Decay:** The non-linear loss of time value as the simulation approaches expiry.
+*   **Gamma/Delta Dynamics:** The changing leverage of the position as the underlying index price fluctuates.
 
-*   **Parallel Execution:** The simulation task is partitioned across $N$ worker goroutines (where $N = \text{CPU Cores}$). Each worker independently computes a subset of paths, reducing total execution time linearly with hardware capacity.
-*   **Memory Efficiency:** The engine avoids heap allocations within the inner simulation loops. Pre-allocated slices and local random number generators (`rand.NewSource`) prevent lock contention on the global source.
-*   **Data Integrity:** A strict **"Clean Architecture"** separates the mathematical engine (`internal/simulation`) from the delivery layers (`internal/api`).
+#### 3.3 Net Strategy P&L
+The total strategy equity $V_{total}$ is calculated as the sum of the long stock values and the option value, minus the liability of the short index hedge:
+$$V_{total}(t) = \sum_{i=1}^n \text{Stock}_i(t) + \text{Option}(t) - \text{ShortIndex}(t)$$
 
-### 5. Architectural Security & Data Isolation
-For professional use, the platform implements a robust security layer:
-*   **Identity Management:** Utilizing **JSON Web Tokens (JWT)** with custom claims for stateless, secure session management.
-*   **Role-Based Access Control (RBAC):** Distinct permission tiers for "Researchers" (Simulation/Dashboard access) and "Admins" (Audit logs/User management).
-*   **Strict Multi-Tenancy:** Using GORM-level query scoping, the system enforces a "No-Leak" policy where data is strictly isolated by `UserID`, ensuring that custom scenarios and portfolio data are never visible across user boundaries.
+### 4. Quantitative Risk Analysis & Statistical Derivations
+The platform focuses on the left-tail risk (worst-case outcomes) across 10,000+ paths.
+
+#### 4.1 Risk Metrics (VaR & CVaR)
+*   **VaR (99%):** Identified threshold loss that is not exceeded with a 99% probability.
+*   **Expected Shortfall (ES):** Mean loss exceeding the VaR threshold, capturing the severity of "Tail Events."
+
+#### 4.2 Strategy Performance Metrics
+*   **Sharpe & Sortino Ratios:** Measures of risk-adjusted return, with the Sortino ratio specifically isolating downside volatility to better evaluate asymmetric option-based returns.
+*   **Maximum Drawdown (MDD):** The average maximum peak-to-trough decline across all paths, quantifying capital impairment risk.
+*   **Success Rate:** The probability $P(V_{final} > V_{initial})$, derived empirically from the simulation path set.
+
+### 5. Software Engineering & High-Performance Concurrency
+The implementation utilizes Go’s **CSP-style concurrency** (Communicating Sequential Processes):
+*   **Worker Pools:** Partitioning simulation tasks across goroutines to scale linearly with CPU cores.
+*   **Memory Optimization:** Avoidance of heap allocations in inner loops and localized PRNG (Pseudo-Random Number Generator) state to prevent global lock contention.
 
 ### 6. Conclusion
-Unicorn Research Go bridges the gap between scientific quantitative research and scalable backend engineering. By integrating rigorous statistical methods (Cholesky, GBM, ES) with a highly concurrent systems language, it provides a stable and precise environment for financial decision-making and macro-level risk assessment.
+Unicorn Research Go provides a rigorous environment for the evaluation of complex financial strategies. By combining stochastic SDE modeling, factor-based correlation, and dynamic option pricing with a high-concurrency systems runtime, it delivers a professional-grade toolkit for modern quantitative research and risk management.
