@@ -19,7 +19,7 @@ func InitDB(dataSourceName string) {
 	}
 
 	// Auto migrate models
-	err = DB.AutoMigrate(&models.Asset{}, &models.PortfolioAsset{}, &models.SimulationResult{}, &models.Dashboard{})
+	err = DB.AutoMigrate(&models.Asset{}, &models.PortfolioAsset{}, &models.SimulationResult{}, &models.Dashboard{}, &models.SectorHedgeResult{}, &models.SectorHedgeDashboard{})
 	if err != nil {
 		log.Fatalf("Error during migration: %v", err)
 	}
@@ -32,13 +32,29 @@ func GetDashboards() ([]models.Dashboard, error) {
 	return dashboards, err
 }
 
+func GetSectorHedgeDashboards() ([]models.SectorHedgeDashboard, error) {
+	var dashboards []models.SectorHedgeDashboard
+	err := DB.Order("created_at desc").Find(&dashboards).Error
+	return dashboards, err
+}
+
 func GetDashboardByID(id uint) (models.Dashboard, error) {
 	var dash models.Dashboard
 	err := DB.Where("id = ?", id).First(&dash).Error
 	return dash, err
 }
 
+func GetSectorHedgeDashboardByID(id uint) (models.SectorHedgeDashboard, error) {
+	var dash models.SectorHedgeDashboard
+	err := DB.Where("id = ?", id).First(&dash).Error
+	return dash, err
+}
+
 func SaveDashboard(dash models.Dashboard) error {
+	return DB.Save(&dash).Error
+}
+
+func SaveSectorHedgeDashboard(dash models.SectorHedgeDashboard) error {
 	return DB.Save(&dash).Error
 }
 
@@ -57,6 +73,22 @@ func SaveSimulation(req models.SimulationRequest, resp models.SimulationResponse
 		SharpeRatio:     resp.Metrics.SharpeRatio,
 		SortinoRatio:    resp.Metrics.SortinoRatio,
 		MaxDrawdown:     resp.Metrics.MaxDrawdown,
+	}
+
+	return DB.Create(&record).Error
+}
+
+func SaveSectorHedge(req models.SectorHedgeRequest, resp models.SectorHedgeResponse) error {
+	inputJSON, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+
+	record := models.SectorHedgeResult{
+		InputJSON:      string(inputJSON),
+		FinalValueMean: resp.Metrics.FinalValueMean,
+		WinRate:        resp.Metrics.WinRate,
+		MaxDrawdown:    resp.Metrics.MaxDrawdown,
 	}
 
 	return DB.Create(&record).Error

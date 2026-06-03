@@ -1,11 +1,11 @@
 package simulation
 
 import (
+	"github.com/lukasenderle/unicorn_research_go/internal/models"
 	"math"
 )
 
 // BlackScholes calculates the price of a European Call option
-// S: current price, K: strike, T: time to expiry (years), r: risk-free rate, sigma: volatility
 func BlackScholes(S, K, T, r, sigma float64) float64 {
 	if T <= 0 {
 		return math.Max(0, S-K)
@@ -16,7 +16,43 @@ func BlackScholes(S, K, T, r, sigma float64) float64 {
 	return S*cumulativeNormal(d1) - K*math.Exp(-r*T)*cumulativeNormal(d2)
 }
 
-// cumulativeNormal approximation (Abramowitz & Stegun)
+// CalculateGreeks returns Delta, Gamma, Theta, Vega, and Rho for a European Call
+func CalculateGreeks(S, K, T, r, sigma float64) models.OptionGreeks {
+	if T <= 0 {
+		delta := 0.0
+		if S > K {
+			delta = 1.0
+		}
+		return models.OptionGreeks{Delta: delta}
+	}
+
+	sqrtT := math.Sqrt(T)
+	d1 := (math.Log(S/K) + (r+0.5*sigma*sigma)*T) / (sigma * sqrtT)
+	d2 := d1 - sigma*sqrtT
+	phiD1 := normalPDF(d1)
+
+	delta := cumulativeNormal(d1)
+	gamma := phiD1 / (S * sigma * sqrtT)
+	vega := S * sqrtT * phiD1 / 100.0 // Per 1% vol change
+
+	// Theta (Annualized, then divided by 365 for daily)
+	theta := (-(S*phiD1*sigma)/(2*sqrtT) - r*K*math.Exp(-r*T)*cumulativeNormal(d2)) / 365.0
+
+	rho := (K * T * math.Exp(-r*T) * cumulativeNormal(d2)) / 100.0 // Per 1% rate change
+
+	return models.OptionGreeks{
+		Delta: delta,
+		Gamma: gamma,
+		Theta: theta,
+		Vega:  vega,
+		Rho:   rho,
+	}
+}
+
+func normalPDF(x float64) float64 {
+	return math.Exp(-0.5*x*x) / math.Sqrt(2*math.Pi)
+}
+
 func cumulativeNormal(x float64) float64 {
 	const (
 		a1 = 0.319381530

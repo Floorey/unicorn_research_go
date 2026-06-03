@@ -11,32 +11,165 @@
         .htmx-indicator { display: none; }
         .htmx-request .htmx-indicator { display: block; }
         .htmx-request.htmx-indicator { display: block; }
+
+        :root {
+            --cyan-glow: rgba(0, 210, 255, 0.3);
+            --cyan-glow-intense: rgba(0, 210, 255, 0.6);
+        }
+
+        body {
+            background-color: #0a0e14;
+            color: #e0f7fa;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 210, 255, 0.05) 0%, transparent 80%),
+                linear-gradient(rgba(0, 210, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 210, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            background-attachment: fixed;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            border-radius: 0.75rem;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.1);
+        }
+
+        .glass-input {
+            background: rgba(2, 6, 23, 0.4);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            border-radius: 0.375rem;
+            color: #f0f9ff;
+            padding: 0.5rem 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .glass-input:focus {
+            outline: none;
+            border-color: rgba(0, 210, 255, 0.6);
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+        }
+
+        .jarvis-button {
+            background: rgba(0, 210, 255, 0.1);
+            color: #22d3ee;
+            border: 1px solid rgba(0, 210, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+            font-size: 0.75rem;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+        }
+
+        .jarvis-button:hover {
+            background: rgba(0, 210, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+        }
+
+        .neon-text {
+            color: #e0f7fa;
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+        }
+
+        .neon-accent {
+            color: #22d3ee;
+            text-shadow: 0 0 5px rgba(0, 210, 255, 0.5);
+        }
+
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spin-slow 8s linear infinite;
+        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans">
-    <nav class="bg-indigo-700 text-white shadow-lg p-4 mb-8">
+<body class="min-h-screen font-sans">
+    <nav class="glass-panel mx-4 mt-4 mb-8 p-4 border-t-2 border-cyan-500 shadow-[0_0_20px_rgba(0,210,255,0.15)]">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold tracking-tight">
-                <a href="/">🦄 Unicorn Research <span class="text-indigo-200 font-light">Quant Lab</span></a>
-            </h1>
+            <div class="flex flex-col">
+                <h1 class="text-2xl font-black text-cyan-50 uppercase tracking-[0.2em] neon-text">
+                    <a href="/">Unicorn <span class="text-cyan-400">OS</span></a>
+                </h1>
+                <p class="text-[8px] text-cyan-500/70 uppercase tracking-[0.5em] font-bold mt-1">
+                    Macro-Quantitative Neural Network // v4.2
+                </p>
+            </div>
             <div class="flex items-center space-x-6">
-                <a href="/" class="transition text-sm font-medium {{ if eq .Content "index" }}text-white font-bold border-b-2 border-white{{ else }}text-indigo-200 hover:text-white{{ end }}">Macro Simulator</a>
-                <a href="/sector-hedge" class="transition text-sm font-medium {{ if eq .Content "sector_hedge" }}text-white font-bold border-b-2 border-white{{ else }}text-indigo-200 hover:text-white{{ end }}">Sector Hedge Tool</a>
-                <a href="/api/v1/risk-report" class="text-indigo-200 hover:text-white transition text-sm font-medium">API Report</a>
+                <a href="/" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "dashboard" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Dashboard</a>
+                <a href="/macro" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "macro" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Macro Simulator</a>
+                <a href="/sector-hedge" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "sector_hedge" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Strategy Lab</a>
+                <a href="/derivatives" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "derivatives" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Derivatives Lab</a>
+                <a href="/quant-lab" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "quant_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Quant Lab</a>
+                <a href="/backtest" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "backtest_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Backtest</a>
+                <a href="/correlation" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "correlation_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Heatmap</a>
+                <a href="/stress" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "stress_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Stress Test</a>
+                <a href="/watchlist" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "watchlist_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Live Watchlist</a>
+            </div>
+            <div class="hidden md:flex items-center space-x-4">
+                <div class="text-right">
+                    <p class="text-[8px] text-cyan-500/50 uppercase font-mono">System Status</p>
+                    <p class="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Optimal</p>
+                </div>
+                <div class="w-8 h-8 rounded-full border-2 border-cyan-500 flex items-center justify-center animate-spin-slow shadow-[0_0_15px_rgba(0,210,255,0.3)]">
+                    <div class="w-4 h-4 rounded-full border border-cyan-400/30 border-dashed"></div>
+                </div>
             </div>
         </div>
     </nav>
 
     <main class="container mx-auto px-4 pb-12">
-        {{ if eq .Content "index" }}
-            {{ template "index_content" . }}
+        {{ if eq .Content "dashboard" }}
+            {{ template "dashboard_content" . }}
+        {{ else if eq .Content "macro" }}
+            {{ template "macro_content" . }}
         {{ else if eq .Content "sector_hedge" }}
             {{ template "sector_hedge_content" . }}
+        {{ else if eq .Content "derivatives" }}
+                <a href="/quant-lab" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "quant_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Quant Lab</a>
+                <a href="/backtest" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "backtest_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Backtest</a>
+                <a href="/correlation" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "correlation_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Heatmap</a>
+                <a href="/stress" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "stress_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Stress Test</a>
+                <a href="/watchlist" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "watchlist_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Live Watchlist</a>
+            {{ template "derivatives_content" . }}
+        {{ else if eq .Content "quant_lab" }}
+            {{ template "quant_lab_content" . }}
+        {{ else if eq .Content "backtest_lab" }}
+                <a href="/correlation" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "correlation_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Heatmap</a>
+                <a href="/stress" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "stress_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Stress Test</a>
+                <a href="/watchlist" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "watchlist_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Live Watchlist</a>
+            {{ template "backtest_lab_content" . }}
+        {{ else if eq .Content "correlation_lab" }}
+                <a href="/stress" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "stress_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Stress Test</a>
+                <a href="/watchlist" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "watchlist_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Live Watchlist</a>
+            {{ template "correlation_lab_content" . }}
+        {{ else if eq .Content "stress_lab" }}
+                <a href="/watchlist" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "watchlist_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Live Watchlist</a>
+            {{ template "stress_lab_content" . }}
+        {{ else if eq .Content "watchlist_lab" }}
+            {{ template "watchlist_lab_content" . }}
+                <a href="/watchlist" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "watchlist_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Live Watchlist</a>
+                <a href="/stress" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "stress_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Stress Test</a>
+                <a href="/watchlist" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "watchlist_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Live Watchlist</a>
+                <a href="/correlation" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "correlation_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Heatmap</a>
+                <a href="/stress" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "stress_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Stress Test</a>
+                <a href="/watchlist" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "watchlist_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Live Watchlist</a>
+                <a href="/quant-lab" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "quant_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Quant Lab</a>
+                <a href="/backtest" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "backtest_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Backtest</a>
+                <a href="/correlation" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "correlation_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Heatmap</a>
+                <a href="/stress" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "stress_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Stress Test</a>
+                <a href="/watchlist" class="text-[10px] font-bold uppercase tracking-widest transition-all {{ if eq .Content "watchlist_lab" }}text-cyan-400 border-b border-cyan-400 shadow-[0_4px_10px_-4px_rgba(0,210,255,0.5)]{{ else }}text-cyan-500/50 hover:text-cyan-400{{ end }}">Live Watchlist</a>
         {{ end }}
     </main>
 
-    <footer class="mt-auto py-8 bg-slate-100 border-t border-slate-200 text-center text-slate-500 text-sm">
-        <p>&copy; 2026 Unicorn Research Go - Public Edition</p>
+    <footer class="max-w-7xl mx-auto mt-12 mb-8 text-center">
+        <p class="text-[10px] text-cyan-500/30 uppercase tracking-[1em] font-bold">
+            Unicorn Research Terminal // Authorized Access Only
+        </p>
     </footer>
 </body>
 </html>

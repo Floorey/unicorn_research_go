@@ -39,7 +39,31 @@ func RegisterRoutes(r *gin.Engine) {
 		v1.GET("/dashboards", listDashboards)
 		v1.POST("/dashboards", saveDashboard)
 		v1.GET("/dashboards/:id", getDashboard)
+
+		// Derivatives Pricing
+		v1.POST("/derivatives/future", runFuturePricingAPI)
+		v1.POST("/derivatives/swap", runSwapPricingAPI)
 	}
+}
+
+func runFuturePricingAPI(c *gin.Context) {
+	var req models.FuturePricingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	resp := simulation.PriceFuture(req)
+	c.JSON(http.StatusOK, resp)
+}
+
+func runSwapPricingAPI(c *gin.Context) {
+	var req models.SwapPricingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	resp := simulation.PriceSwap(req)
+	c.JSON(http.StatusOK, resp)
 }
 
 func runSectorHedgeAPI(c *gin.Context) {
@@ -50,6 +74,9 @@ func runSectorHedgeAPI(c *gin.Context) {
 	}
 
 	resp := simulation.RunSectorHedge(req)
+	go func() {
+		db.SaveSectorHedge(req, resp)
+	}()
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -331,11 +358,21 @@ func runSimulation(c *gin.Context) {
 		return
 	}
 
-	if req.VolATech == 0 { req.VolATech, _ = market.GetVolatility("QQQ") }
-	if req.VolBEnergy == 0 { req.VolBEnergy, _ = market.GetVolatility("XLE") }
-	if req.VolCBonds == 0 { req.VolCBonds, _ = market.GetVolatility("TLT") }
-	if req.VolDCrypto == 0 { req.VolDCrypto, _ = market.GetVolatility("BTC") }
-	if req.VolEGold == 0 { req.VolEGold, _ = market.GetVolatility("GLD") }
+	if req.VolATech == 0 {
+		req.VolATech, _ = market.GetVolatility("QQQ")
+	}
+	if req.VolBEnergy == 0 {
+		req.VolBEnergy, _ = market.GetVolatility("XLE")
+	}
+	if req.VolCBonds == 0 {
+		req.VolCBonds, _ = market.GetVolatility("TLT")
+	}
+	if req.VolDCrypto == 0 {
+		req.VolDCrypto, _ = market.GetVolatility("BTC")
+	}
+	if req.VolEGold == 0 {
+		req.VolEGold, _ = market.GetVolatility("GLD")
+	}
 
 	resp := simulation.Run(req)
 	go func() {

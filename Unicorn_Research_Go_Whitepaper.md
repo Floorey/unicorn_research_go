@@ -20,10 +20,13 @@ The heart of the application is a multi-threaded Monte Carlo simulation engine i
 ### 3. Advanced Risk Metrics & Strategy Lab
 The platform provides a comprehensive suite of "Quant-First" metrics and a specialized **Strategy Lab**:
 *   **Value at Risk (VaR 99%):** Quantifies the maximum expected loss over a specific timeframe with 99% confidence.
-*   **Sector Hedge Simulator:** A specialized tool for analyzing **Alpha Capture** strategies. It uses a **Single-Factor Beta Model** to simulate specific stock picks (e.g., MU, NVDA) against a benchmark index (e.g., QQQ).
-*   **Real-Time Data Calibrations:** The system automatically calculates trailing **Betas** and **Idiosyncratic Volatilities** from live market data to ensure simulations are grounded in current market reality.
+*   **Hedge Strategy Simulator:** A specialized tool for analyzing **Long/Short** and **Alpha Capture** strategies. It models a long basket of stocks (e.g., MU, NVDA) against a specific **Hedge Instrument** (e.g., QQQ, SPY, or a competitor's stock).
+*   **Derivatives Lab:** A new module for precise pricing of **Futures** and **Interest Rate Swaps**.
+    *   **Futures Pricing:** Implements the cost-of-carry model with continuous compounding.
+    *   **Swap Pricing:** Calculates NPV and Fair Swap Rates for interest rate swaps using a discrete discounting model.
+*   **Real-Time Data Calibrations:** The system automatically calculates trailing **Betas** and **Idiosyncratic Volatilities** from live market data relative to the chosen hedge, ensuring simulations are grounded in current market reality.
 *   **Dynamic Option Pricing:** Integrates a **Black-Scholes-Merton** engine to model call option hedges and their time-decay (Theta) dynamics within simulated paths.
-*   **Risk-Adjusted Returns:** Implements both **Sharpe Ratio** (total risk) and **Sortino Ratio** (downside risk) to evaluate investment quality.
+*   **Risk-Adjusted Returns:** Implements both **Sharpe Ratio** (total risk) and **Sortino Ratio** (downside risk) to evaluate strategy quality.
 
 ### 4. Technical Architecture
 The project follows a Clean Architecture pattern, ensuring maintainability and scalability:

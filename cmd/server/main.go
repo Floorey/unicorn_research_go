@@ -1,12 +1,14 @@
 package main
 
 import (
-	"log"
-	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"github.com/lukasenderle/unicorn_research_go/internal/api"
 	"github.com/lukasenderle/unicorn_research_go/internal/db"
 	"html/template"
+	"log"
+	"net/http"
+	_ "net/http/pprof"
 )
 
 func main() {
@@ -14,6 +16,10 @@ func main() {
 	db.InitDB("./simulations.db")
 
 	r := gin.Default()
+
+	// Add pprof routes
+	r.GET("/debug/pprof/*any", gin.WrapH(http.DefaultServeMux))
+	r.POST("/debug/pprof/*any", gin.WrapH(http.DefaultServeMux))
 
 	// Add Template Functions
 	r.SetFuncMap(template.FuncMap{
@@ -24,6 +30,7 @@ func main() {
 			}
 			return res
 		},
+		"multiply": func(a, b float64) float64 { return a * b },
 	})
 
 	// Load Templates

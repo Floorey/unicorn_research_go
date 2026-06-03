@@ -26,18 +26,18 @@ To accurately model a portfolio, assets cannot be treated as independent variabl
 2.  **Lower Triangular Matrix ($L$):** The system solves for $L$ such that $L L^T = \Sigma$.
 3.  **Transformation:** Given a vector of independent random variables $Z$, the correlated vector $\epsilon$ is derived via $\epsilon = L Z$.
 
-### 3. Sector Hedge Strategy: Factor Modeling & Option Convexity
-Version 2.1 introduces a specialized module for analyzing **Sector-Neutral Long/Short strategies** augmented with derivative leverage.
+### 3. Strategy Lab: Direct Hedging & Option Convexity
+Version 2.1 introduces a specialized module for analyzing **Direct Hedge strategies** (e.g., Long Basket vs. Short Hedge Instrument) augmented with derivative leverage.
 
 #### 3.1 Real-Time Statistical Derivation
-The platform transcends static modeling by integrating live market data for asset-specific calibration:
-*   **Dynamic Beta Calculation**: The system automatically fetches historical daily candles for stocks (e.g., MU, NVDA) and benchmarks (e.g., QQQ, SPY). It computes the **Covariance($R_s, R_i$) / Variance($R_i$)** ratio over a 252-day trailing window to derive real-time Beta coefficients.
-*   **Idiosyncratic Risk Extraction**: By applying the Factor Model identity ($\sigma_s^2 = \beta^2 \sigma_i^2 + \sigma_{idio}^2$), the engine isolates the residual volatility ($\sigma_{idio}$) unique to the specific company, allowing for precise "Alpha" simulation.
+The platform transcends static modeling by integrating live market data for strategy-specific calibration:
+*   **Dynamic Beta Calculation**: The system automatically fetches historical daily candles for long positions (e.g., MU, NVDA) and the chosen **Hedge Instrument** (e.g., QQQ, SPY, or another stock). It computes the **Covariance($R_{long}, R_{hedge}$) / Variance($R_{hedge}$)** ratio over a 252-day trailing window to derive real-time Beta coefficients.
+*   **Idiosyncratic Risk Extraction**: By applying the Factor Model identity ($\sigma_{long}^2 = \beta^2 \sigma_{hedge}^2 + \sigma_{idio}^2$), the engine isolates the residual volatility ($\sigma_{idio}$) unique to the specific stock picks, allowing for precise "Alpha" simulation against a direct short leg.
 
-#### 3.2 Single-Factor Beta Model
-Individual stock returns $R_i$ are modeled as a linear function of a Sector Index return $R_I$:
-$$R_i = \beta_i R_I + \epsilon_i$$
-Where $\beta_i$ is the sensitivity to the index and $\epsilon_i \sim N(0, \sigma_{idio}^2)$ represents the idiosyncratic risk specific to the company (Alpha source).
+#### 3.2 Single-Factor Strategy Model
+Net portfolio returns are modeled as a function of the Hedge Instrument's performance:
+$$R_{portfolio} = \sum w_i (\beta_i R_{hedge} + \epsilon_i) - R_{hedge, short}$$
+Where $\epsilon_i$ represents the Alpha source (performance not correlated to the hedge).
 
 #### 3.3 Dynamic Derivative Pricing (Black-Scholes-Merton)
 The strategy incorporates European Call Options, which are re-priced at every monthly step ($dt$) of the simulation to capture path-dependent effects:
@@ -50,7 +50,25 @@ By embedding this formula within the Monte Carlo paths, the system accounts for:
 The total strategy equity $V_{total}$ is calculated as the sum of the long stock values and the option value, minus the liability of the short index hedge:
 $$V_{total}(t) = \sum_{i=1}^n \text{Stock}_i(t) + \text{Option}(t) - \text{ShortIndex}(t)$$
 
-### 4. Quantitative Risk Analysis & Statistical Derivations
+### 4. Derivatives Lab: Arbitrage and Linear Instruments
+The platform includes a specialized toolkit for the valuation of non-stochastic derivative instruments, focusing on arbitrage-free pricing models.
+
+#### 4.1 Futures Pricing (Cost-of-Carry)
+Futures are priced using the continuous-time cost-of-carry model:
+$$F = S \cdot e^{(r-q)T}$$
+Where:
+*   $S$: Spot Price
+*   $r$: Risk-Free Rate
+*   $q$: Dividend Yield
+*   $T$: Time to Expiry
+
+#### 4.2 Interest Rate Swaps (NPV Model)
+The swap pricer calculates the Net Present Value (NPV) and the **Fair Swap Rate** (Par Rate) for Interest Rate Swaps. 
+*   **Fixed Leg:** $\sum P \cdot R_{fixed} \cdot \Delta t \cdot DF(t)$
+*   **Floating Leg:** $\sum P \cdot R_{floating} \cdot \Delta t \cdot DF(t)$
+*   **Fair Rate:** The system solves for the rate $R$ such that $NPV_{fixed} = NPV_{floating}$.
+
+### 5. Quantitative Risk Analysis & Statistical Derivations
 The platform focuses on the left-tail risk (worst-case outcomes) across 10,000+ paths.
 
 #### 4.1 Risk Metrics (VaR & CVaR)

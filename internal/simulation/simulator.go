@@ -4,6 +4,7 @@ import (
 	"log"
 	"math"
 	"math/rand"
+	"runtime"
 	"sort"
 	"sync"
 	"time"
@@ -58,25 +59,22 @@ func Run(req models.SimulationRequest) models.SimulationResponse {
 	visualPaths := make([][]float64, 100)
 	var visualMutex sync.Mutex
 
+	numWorkers := runtime.NumCPU()
+	if numWorkers < 1 {
+		numWorkers = 1
+	}
+	jobs := make(chan int, numWorkers*2)
 	var wg sync.WaitGroup
-	workers := 8
-	pathsPerWorker := numPaths / workers
 
-	log.Printf("[SIM] Starting simulation with %d paths across %d workers", numPaths, workers)
+	log.Printf("[SIM] Starting simulation with %d paths across %d workers", numPaths, numWorkers)
 
-	for w := 0; w < workers; w++ {
+	for w := 0; w < numWorkers; w++ {
 		wg.Add(1)
-		startIdx := w * pathsPerWorker
-		endIdx := (w + 1) * pathsPerWorker
-		if w == workers-1 {
-			endIdx = numPaths
-		}
-
-		go func(s, e int) {
+		go func(workerID int) {
 			defer wg.Done()
-			r := rand.New(rand.NewSource(time.Now().UnixNano() + int64(s)))
+			r := rand.New(rand.NewSource(time.Now().UnixNano() + int64(workerID)))
 
-			for i := s; i < e; i++ {
+			for i := range jobs {
 				pTech, pEnergy, pBonds, pCrypto, pGold := 1.0, 1.0, 1.0, 1.0, 1.0
 
 				isVisual := i < 100
@@ -115,8 +113,14 @@ func Run(req models.SimulationRequest) models.SimulationResponse {
 				}
 				portfolioEndValues[i] = (pTech*wTech + pEnergy*wEnergy + pBonds*wBonds + pCrypto*wCrypto + pGold*wGold) * totalInvestment
 			}
-		}(startIdx, endIdx)
+		}(w)
 	}
+
+	// Feed jobs
+	for i := 0; i < numPaths; i++ {
+		jobs <- i
+	}
+	close(jobs)
 	wg.Wait()
 
 	sort.Float64s(portfolioEndValues)
@@ -252,7 +256,7 @@ func cholesky(matrix [][]float64) [][]float64 {
 			if i == j {
 				L[i][j] = math.Sqrt(matrix[i][i] - sum)
 			} else {
-				L[i][j] = (1.0 / L[j][j] * (matrix[i][j] - sum))
+				L[i][j] = 1.0 / L[j][j] * (matrix[i][j] - sum)
 			}
 		}
 	}

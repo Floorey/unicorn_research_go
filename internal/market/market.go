@@ -4,6 +4,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"strings"
 
 	api "github.com/MarketDataApp/sdk-go"
 )
@@ -18,30 +19,59 @@ func init() {
 func GetPrice(symbol string) (float64, error) {
 	token := os.Getenv("MARKETDATA_TOKEN")
 	if token == "" {
-		log.Printf("[MARKET] No API token, returning mock price for %s", symbol)
+		// Fallback to YF if no token
+		price, err := GetRealPrice(symbol)
+		if err == nil && price > 0 {
+			return price, nil
+		}
 		return 100.0, nil
 	}
 
+	// MarketDataApp uses different endpoints for indices
+	if strings.HasPrefix(symbol, "^") {
+		// For indices like ^GSPC, MarketDataApp might need a different format or use IndexQuote
+		// But let's try StockQuote first as many indices are supported there
+	}
+
 	quotes, err := api.StockQuote().Symbol(symbol).Get()
-	if err != nil { return 0, err }
-	if len(quotes) > 0 { return quotes[0].Last, nil }
-	return 0, nil
+	if err != nil {
+		// Fallback to YF
+		price, _ := GetRealPrice(symbol)
+		if price > 0 {
+			return price, nil
+		}
+		return 100.0, err
+	}
+	if len(quotes) > 0 {
+		return quotes[0].Last, nil
+	}
+
+	// Final fallback
+	price, _ := GetRealPrice(symbol)
+	if price > 0 {
+		return price, nil
+	}
+	return 100.0, nil
 }
 
 func GetVolatility(symbol string) (float64, error) {
 	token := os.Getenv("MARKETDATA_TOKEN")
 	if token == "" {
-		log.Printf("[MARKET] No API token, returning mock volatility for %s", symbol)
+		vol, err := GetRealVolatility(symbol)
+		if err == nil && vol > 0 {
+			return vol, nil
+		}
 		return 0.18, nil
 	}
 
 	candles, err := api.StockCandles().Symbol(symbol).Resolution("D").Countback(252).Get()
-	if err != nil {
-		log.Printf("[MARKET] Error fetching candles for %s: %v", symbol, err)
+	if err != nil || len(candles) < 2 {
+		vol, _ := GetRealVolatility(symbol)
+		if vol > 0 {
+			return vol, nil
+		}
 		return 0.18, nil
 	}
-
-	if len(candles) < 2 { return 0.18, nil }
 
 	returns := make([]float64, len(candles)-1)
 	for i := 1; i < len(candles); i++ {
@@ -49,7 +79,9 @@ func GetVolatility(symbol string) (float64, error) {
 	}
 
 	sum := 0.0
-	for _, r := range returns { sum += r }
+	for _, r := range returns {
+		sum += r
+	}
 	mean := sum / float64(len(returns))
 
 	varianceSum := 0.0
@@ -64,18 +96,31 @@ func GetVolatility(symbol string) (float64, error) {
 func GetBeta(stockSymbol, indexSymbol string) (float64, error) {
 	token := os.Getenv("MARKETDATA_TOKEN")
 	if token == "" {
-		log.Printf("[MARKET] No API token, returning mock beta 1.0 for %s vs %s", stockSymbol, indexSymbol)
+		beta, err := GetRealBeta(stockSymbol, indexSymbol)
+		if err == nil {
+			return beta, nil
+		}
 		return 1.0, nil
 	}
 
 	stockCandles, err := api.StockCandles().Symbol(stockSymbol).Resolution("D").Countback(252).Get()
-	if err != nil { return 1.0, err }
+	if err != nil {
+		beta, _ := GetRealBeta(stockSymbol, indexSymbol)
+		return beta, nil
+	}
 	indexCandles, err := api.StockCandles().Symbol(indexSymbol).Resolution("D").Countback(252).Get()
-	if err != nil { return 1.0, err }
+	if err != nil {
+		beta, _ := GetRealBeta(stockSymbol, indexSymbol)
+		return beta, nil
+	}
 
 	minLen := len(stockCandles)
-	if len(indexCandles) < minLen { minLen = len(indexCandles) }
-	if minLen < 2 { return 1.0, nil }
+	if len(indexCandles) < minLen {
+		minLen = len(indexCandles)
+	}
+	if minLen < 2 {
+		return 1.0, nil
+	}
 
 	stockReturns := make([]float64, 0)
 	indexReturns := make([]float64, 0)
@@ -97,7 +142,9 @@ func GetBeta(stockSymbol, indexSymbol string) (float64, error) {
 		variance += (indexReturns[i] - meanI) * (indexReturns[i] - meanI)
 	}
 
-	if variance == 0 { return 1.0, nil }
+	if variance == 0 {
+		return 1.0, nil
+	}
 	return covariance / variance, nil
 }
 
@@ -105,6 +152,8 @@ func GetIdiosyncraticVolatility(stockSymbol, indexSymbol string, beta float64) (
 	stockVol, _ := GetVolatility(stockSymbol)
 	indexVol, _ := GetVolatility(indexSymbol)
 	idioVar := (stockVol * stockVol) - (beta * beta * indexVol * indexVol)
-	if idioVar < 0 { idioVar = 0.01 }
+	if idioVar < 0 {
+		idioVar = 0.01
+	}
 	return math.Sqrt(idioVar), nil
 }
