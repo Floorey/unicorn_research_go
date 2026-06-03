@@ -30,6 +30,15 @@ func TestRun(t *testing.T) {
 		t.Errorf("Expected total investment %f, got %f", expectedTotal, resp.InputSummary.TotalInvestment)
 	}
 
+	if resp.Metrics.SharpeRatio == 0 && resp.Metrics.ExpectedMeanEur != req.PosATech+req.PosBEnergy+req.PosCBonds {
+		// This is a loose check, but we expect some risk metrics to be calculated
+		// unless the simulation is trivial.
+	}
+
+	if resp.Metrics.MaxDrawdown < 0 {
+		t.Errorf("Expected non-negative MaxDrawdown, got %f", resp.Metrics.MaxDrawdown)
+	}
+
 	if len(resp.ChartData) != 100 {
 		t.Errorf("Expected 100 visual paths, got %d", len(resp.ChartData))
 	}

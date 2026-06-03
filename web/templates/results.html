@@ -1,0 +1,127 @@
+<div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-semibold text-slate-800">Simulation Results</h2>
+        <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase">Success</span>
+    </div>
+
+    <!-- Metrics Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        <div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">VaR (99%)</label>
+            <div class="text-xl font-bold text-red-600">{{ .Metrics.Var99Percent }}%</div>
+        </div>
+        <div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Exp. Shortfall</label>
+            <div class="text-xl font-bold text-orange-600">{{ .Metrics.ExpectedShortfall }}%</div>
+        </div>
+        <div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Expected Mean</label>
+            <div class="text-xl font-bold text-indigo-600">€{{ .Metrics.ExpectedMeanEur }}</div>
+        </div>
+        <div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Sharpe Ratio</label>
+            <div class="text-xl font-bold text-emerald-600">{{ .Metrics.SharpeRatio }}</div>
+        </div>
+        <div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Max Drawdown</label>
+            <div class="text-xl font-bold text-rose-600">{{ .Metrics.MaxDrawdown }}%</div>
+        </div>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="relative h-[300px] w-full mb-6">
+        <canvas id="simulationChart"></canvas>
+    </div>
+
+    <!-- Drifts Summary -->
+    <div class="pt-6 border-t border-slate-100 mb-6">
+        <h3 class="text-sm font-semibold text-slate-700 mb-4">Calculated Macro Drifts (%)</h3>
+        <div class="flex flex-wrap gap-6">
+            <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-blue-400"></span>
+                <span class="text-sm text-slate-600"><span class="font-medium">Tech:</span> {{ .InputSummary.CalculatedDrifts.Tech }}%</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-orange-400"></span>
+                <span class="text-sm text-slate-600"><span class="font-medium">Energy:</span> {{ .InputSummary.CalculatedDrifts.Energy }}%</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-slate-400"></span>
+                <span class="text-sm text-slate-600"><span class="font-medium">Bonds:</span> {{ .InputSummary.CalculatedDrifts.Bonds }}%</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-purple-400"></span>
+                <span class="text-sm text-slate-600"><span class="font-medium">Crypto:</span> {{ .InputSummary.CalculatedDrifts.Crypto }}%</span>
+            </div>
+             <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-yellow-400"></span>
+                <span class="text-sm text-slate-600"><span class="font-medium">Gold:</span> {{ .InputSummary.CalculatedDrifts.Gold }}%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metric Legend -->
+    <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-5">
+        <h3 class="text-indigo-900 font-semibold text-sm mb-3 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Understanding the Results
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
+            <div class="text-[11px] leading-relaxed">
+                <p class="text-indigo-800 font-bold mb-1 uppercase">VaR (Value at Risk) 99%</p>
+                <p class="text-slate-600">The "worst-case" loss you can expect over the duration with 99% confidence.</p>
+            </div>
+            <div class="text-[11px] leading-relaxed">
+                <p class="text-indigo-800 font-bold mb-1 uppercase">Expected Shortfall (CVaR)</p>
+                <p class="text-slate-600">The average loss in the most extreme 1% of cases.</p>
+            </div>
+            <div class="text-[11px] leading-relaxed">
+                <p class="text-indigo-800 font-bold mb-1 uppercase">Sharpe Ratio</p>
+                <p class="text-slate-600">Measures excess return per unit of total risk.</p>
+            </div>
+            <div class="text-[11px] leading-relaxed">
+                <p class="text-indigo-800 font-bold mb-1 uppercase">Max Drawdown</p>
+                <p class="text-slate-600">The maximum peak-to-trough decline observed.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const ctx = document.getElementById('simulationChart').getContext('2d');
+            const chartData = {{ .ChartData }};
+            
+            const pathsToShow = chartData.slice(0, 20);
+            const labels = Array.from({length: pathsToShow[0].length}, (_, i) => i === 0 ? 'Start' : 'M' + i);
+
+            const datasets = pathsToShow.map((path, index) => ({
+                label: 'Path ' + (index + 1),
+                data: path,
+                borderColor: index === 0 ? 'rgba(79, 70, 229, 0.8)' : 'rgba(148, 163, 184, 0.2)',
+                borderWidth: index === 0 ? 3 : 1,
+                fill: false,
+                tension: 0.1,
+                pointRadius: 0
+            }));
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: true, grid: { display: false } },
+                        y: { display: true, title: { display: true, text: 'Portfolio Value (€)' } }
+                    }
+                }
+            });
+        })();
+    </script>
+</div>

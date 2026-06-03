@@ -13,7 +13,7 @@ import (
 
 func Run(req models.SimulationRequest) models.SimulationResponse {
 	startTime := time.Now()
-	
+
 	totalInvestment := req.PosATech + req.PosBEnergy + req.PosCBonds + req.PosDCrypto + req.PosEGold
 	if totalInvestment == 0 {
 		return models.SimulationResponse{Status: "error"}
@@ -48,7 +48,7 @@ func Run(req models.SimulationRequest) models.SimulationResponse {
 	correlations := [][]float64{
 		{1.0, 0.3, -0.2, 0.5, -0.1},  // Tech
 		{0.3, 1.0, -0.1, 0.1, 0.2},   // Energy
-		{-0.2, -0.1, 1.0, -0.3, 0.4},  // Bonds
+		{-0.2, -0.1, 1.0, -0.3, 0.4}, // Bonds
 		{0.5, 0.1, -0.3, 1.0, -0.2},  // Crypto
 		{-0.1, 0.2, 0.4, -0.2, 1.0},  // Gold
 	}
@@ -78,7 +78,7 @@ func Run(req models.SimulationRequest) models.SimulationResponse {
 
 			for i := s; i < e; i++ {
 				pTech, pEnergy, pBonds, pCrypto, pGold := 1.0, 1.0, 1.0, 1.0, 1.0
-				
+
 				isVisual := i < 100
 				var currentPath []float64
 				if isVisual {
@@ -88,7 +88,7 @@ func Run(req models.SimulationRequest) models.SimulationResponse {
 
 				for j := 1; j <= steps; j++ {
 					z := []float64{r.NormFloat64(), r.NormFloat64(), r.NormFloat64(), r.NormFloat64(), r.NormFloat64()}
-					
+
 					// Apply Cholesky e = L * z
 					e := make([]float64, 5)
 					for row := 0; row < 5; row++ {
@@ -120,10 +120,12 @@ func Run(req models.SimulationRequest) models.SimulationResponse {
 	wg.Wait()
 
 	sort.Float64s(portfolioEndValues)
-	
+
 	// VaR 99%
 	varIdx := int(float64(numPaths) * 0.01)
-	if varIdx < 0 { varIdx = 0 }
+	if varIdx < 0 {
+		varIdx = 0
+	}
 	varValue := portfolioEndValues[varIdx]
 	var99Percent := (1.0 - (varValue / totalInvestment)) * 100.0
 
@@ -135,14 +137,78 @@ func Run(req models.SimulationRequest) models.SimulationResponse {
 	esValue := esSum / float64(varIdx+1)
 	es99Percent := (1.0 - (esValue / totalInvestment)) * 100.0
 
+	// Risk Metrics Calculation
+	riskFreeRate := req.InterestRate / 100.0
+	annualizedReturns := make([]float64, numPaths)
+	sumReturns := 0.0
+	for i, endVal := range portfolioEndValues {
+		annRet := math.Pow(endVal/totalInvestment, 1.0/float64(req.DurationYears)) - 1.0
+		annualizedReturns[i] = annRet
+		sumReturns += annRet
+	}
+	meanAnnualReturn := sumReturns / float64(numPaths)
+
+	// StdDev and Downside Deviation
+	varSum := 0.0
+	downsideVarSum := 0.0
+	downsideCount := 0
+	for _, r := range annualizedReturns {
+		diff := r - meanAnnualReturn
+		varSum += diff * diff
+		if r < riskFreeRate {
+			dDiff := r - riskFreeRate
+			downsideVarSum += dDiff * dDiff
+			downsideCount++
+		}
+	}
+	stdDev := math.Sqrt(varSum / float64(numPaths))
+	downsideDev := math.Sqrt(downsideVarSum / float64(numPaths))
+
+	sharpe := 0.0
+	if stdDev > 0 {
+		sharpe = (meanAnnualReturn - riskFreeRate) / stdDev
+	}
+
+	sortino := 0.0
+	if downsideDev > 0 {
+		sortino = (meanAnnualReturn - riskFreeRate) / downsideDev
+	}
+
+	// Max Drawdown Calculation (Average of Max Drawdowns across visual paths for efficiency)
+	// Or we can do it during the path generation. Let's do it for visual paths first.
+	totalMaxDD := 0.0
+	ddCount := 0
+	for _, path := range visualPaths {
+		if path == nil {
+			continue
+		}
+		peak := 0.0
+		maxDD := 0.0
+		for _, val := range path {
+			if val > peak {
+				peak = val
+			}
+			dd := (peak - val) / peak
+			if dd > maxDD {
+				maxDD = dd
+			}
+		}
+		totalMaxDD += maxDD
+		ddCount++
+	}
+	meanMaxDD := 0.0
+	if ddCount > 0 {
+		meanMaxDD = totalMaxDD / float64(ddCount)
+	}
+
 	sum := 0.0
 	for _, v := range portfolioEndValues {
 		sum += v
 	}
 	meanVal := sum / float64(numPaths)
 
-	log.Printf("[SIM] Completed in %v. Mean: %.2f, VaR99: %.2f%%, ES99: %.2f%%", 
-		time.Since(startTime), meanVal, var99Percent, es99Percent)
+	log.Printf("[SIM] Completed in %v. Mean: %.2f, VaR99: %.2f%%, ES99: %.2f%%, Sharpe: %.2f",
+		time.Since(startTime), meanVal, var99Percent, es99Percent, sharpe)
 
 	return models.SimulationResponse{
 		Status: "success",
@@ -160,6 +226,9 @@ func Run(req models.SimulationRequest) models.SimulationResponse {
 			Var99Percent:      math.Round(var99Percent*100) / 100,
 			ExpectedShortfall: math.Round(es99Percent*100) / 100,
 			ExpectedMeanEur:   math.Round(meanVal*100) / 100,
+			SharpeRatio:       math.Round(sharpe*100) / 100,
+			SortinoRatio:      math.Round(sortino*100) / 100,
+			MaxDrawdown:       math.Round(meanMaxDD*10000) / 100, // as percentage
 		},
 		ChartData: visualPaths,
 	}

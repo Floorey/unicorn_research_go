@@ -1,41 +1,45 @@
 package db
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
-	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/lukasenderle/unicorn_research_go/internal/models"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-var DB *sql.DB
+var DB *gorm.DB
 
 func InitDB(dataSourceName string) {
 	var err error
-	DB, err = sql.Open("sqlite3", dataSourceName)
+	DB, err = gorm.Open(sqlite.Open(dataSourceName), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Error opening database: %v", err)
 	}
 
-	// Create table for simulation results
-	query := `
-	CREATE TABLE IF NOT EXISTS simulations (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-		input_json TEXT,
-		total_investment REAL,
-		var_99 REAL,
-		es_99 REAL,
-		mean_eur REAL
-	);`
-
-	_, err = DB.Exec(query)
+	// Auto migrate models
+	err = DB.AutoMigrate(&models.Asset{}, &models.PortfolioAsset{}, &models.SimulationResult{}, &models.Dashboard{})
 	if err != nil {
-		log.Fatalf("Error creating table: %v", err)
+		log.Fatalf("Error during migration: %v", err)
 	}
-	log.Println("Database initialized successfully")
+	log.Println("Database initialized and migrated successfully")
+}
+
+func GetDashboards() ([]models.Dashboard, error) {
+	var dashboards []models.Dashboard
+	err := DB.Order("created_at desc").Find(&dashboards).Error
+	return dashboards, err
+}
+
+func GetDashboardByID(id uint) (models.Dashboard, error) {
+	var dash models.Dashboard
+	err := DB.Where("id = ?", id).First(&dash).Error
+	return dash, err
+}
+
+func SaveDashboard(dash models.Dashboard) error {
+	return DB.Save(&dash).Error
 }
 
 func SaveSimulation(req models.SimulationRequest, resp models.SimulationResponse) error {
@@ -44,36 +48,22 @@ func SaveSimulation(req models.SimulationRequest, resp models.SimulationResponse
 		return err
 	}
 
-	query := `INSERT INTO simulations (input_json, total_investment, var_99, es_99, mean_eur) VALUES (?, ?, ?, ?, ?)`
-	_, err = DB.Exec(query, string(inputJSON), resp.InputSummary.TotalInvestment, resp.Metrics.Var99Percent, resp.Metrics.ExpectedShortfall, resp.Metrics.ExpectedMeanEur)
-	return err
+	record := models.SimulationResult{
+		InputJSON:       string(inputJSON),
+		TotalInvestment: resp.InputSummary.TotalInvestment,
+		Var99:           resp.Metrics.Var99Percent,
+		ES99:            resp.Metrics.ExpectedShortfall,
+		MeanEur:         resp.Metrics.ExpectedMeanEur,
+		SharpeRatio:     resp.Metrics.SharpeRatio,
+		SortinoRatio:    resp.Metrics.SortinoRatio,
+		MaxDrawdown:     resp.Metrics.MaxDrawdown,
+	}
+
+	return DB.Create(&record).Error
 }
 
-type SimulationRecord struct {
-	ID              int       `json:"id"`
-	Timestamp       time.Time `json:"timestamp"`
-	Input           string    `json:"input"`
-	TotalInvestment float64   `json:"total_investment"`
-	Var99           float64   `json:"var_99"`
-	ES99            float64   `json:"es_99"`
-	MeanEur         float64   `json:"mean_eur"`
-}
-
-func GetSimulations(limit int) ([]SimulationRecord, error) {
-	rows, err := DB.Query("SELECT id, timestamp, input_json, total_investment, var_99, es_99, mean_eur FROM simulations ORDER BY timestamp DESC LIMIT ?", limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var records []SimulationRecord
-	for rows.Next() {
-		var r SimulationRecord
-		err := rows.Scan(&r.ID, &r.Timestamp, &r.Input, &r.TotalInvestment, &r.Var99, &r.ES99, &r.MeanEur)
-		if err != nil {
-			return nil, err
-		}
-		records = append(records, r)
-	}
-	return records, nil
+func GetSimulations(limit int) ([]models.SimulationResult, error) {
+	var results []models.SimulationResult
+	err := DB.Order("created_at desc").Limit(limit).Find(&results).Error
+	return results, err
 }
